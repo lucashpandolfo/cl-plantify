@@ -3,7 +3,6 @@
 (in-package #:cl-umlilify)
 
 ;;; "cl-umlilify" goes here. Hacks and glory await!
-
 (defun get-all-symbols (test &optional package)
   (let ((lst ())
         (package (find-package package)))
@@ -28,23 +27,45 @@
     (error () nil)))
 
 (defun get-all-classes (&optional (package nil))
-  (let ((classes (get-all-symbols #'classp package)))
-    (loop for class in classes
-	 collecting (list :name class
-			  :slots (get-slots class)
-			  :subclasses (find-subclasses class)))))
+  (delete-duplicates 
+   (let ((classes (get-all-symbols #'classp package)))
+     (loop for class in classes
+	collecting (list :name class
+			 :slots (get-slots class)
+			 :subclasses (find-subclasses class))))
+   :key (lambda (class) (getf class :name))))
+
+(defun get-hierarchy (class)
+  (list :name class
+	:slots (get-slots class)
+	:subclasses (find-subclasses class))
+  (loop for class in classes
+     collecting (list :name class
+		      :slots (get-slots class)
+		      :subclasses (find-subclasses class))))
+  
 
 (defun classes-to-plantuml (classes &optional (stream t))
   (mapcar (lambda (class)
-	    (format stream "class \"~a\"{ ~%~{ - ~a ~%~}}~%" (getf class :name) (getf class :slots))) classes)
+	    (format stream "class \"~S\"{ ~%~{ - ~S ~%~}}~%" (getf class :name) (getf class :slots))) classes)
   (mapcar (lambda (class)
 	    (mapcar (lambda (subclass)
-		      (format stream "\"~a\" <|--- \"~a\"~%" (getf class :name) subclass))
+		      (format stream "\"~S\" <|-- \"~S\"~%" (getf class :name) subclass))
 		    (getf class :subclasses)))
 	  classes)
   t)
 
+
 (with-open-file (archivo "/home/lucas/quicklisp/local-projects/cl-umlilify/diagrama.plant" :if-exists :supersede :direction :output)
-  (classes-to-plantuml (get-all-classes t) archivo))
+  (format archivo ";;; -*- Mode: org; -*- ~%#+begin_src plantuml :file salida.svg~%")
+
+  (classes-to-plantuml
+   (reduce #'append
+	   (mapcar #'get-all-classes
+		   (delete (package-name 'common-lisp) 
+			   (append (mapcar #'package-name (package-use-list (find-package 'ql))) '(ql) )))) archivo)
+
+
+  (format archivo "#+end_src"))
 
 
