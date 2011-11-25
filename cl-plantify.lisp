@@ -69,9 +69,11 @@
 	   (format stream "}~%")))))
 
 
-(with-open-file (archivo "/home/lucas/quicklisp/local-projects/cl-plantify/cffi.plant" :if-exists :supersede :direction :output)
-  (format archivo ";;; -*- Mode: org; -*- ~%#+begin_src plantuml :file cffi.svg~%")
-
-  (classes-to-plantuml-with-packages (get-all-classes 'cffi) archivo)
-
-  (format archivo "#+end_src"))
+;; (with-open-file (archivo "/home/lucas/quicklisp/local-projects/cl-plantify/cffi.plant" :if-exists :supersede :direction :output)
+;;   (format archivo ";;; -*- Mode: org; -*- ~%#+begin_src plantuml :file cffi.svg~%")
+;;   (classes-to-plantuml-with-packages (reduce #'append
+;; 					     (mapcar #'get-all-classes
+;; 						     (delete (package-name 'common-lisp)
+;; 							     (append (mapcar #'package-name (package-use-list (find-package 'ql))) '(ql) ))))
+;; 				     archivo)
+;;   (format archivo "#+end_src"))
