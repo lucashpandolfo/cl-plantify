@@ -1,4 +1,4 @@
-(in-package #:cl-umlilify)
+(in-package #:cl-plantify)
 
 (defun get-all-symbols (test &optional package)
   (let ((lst ())
@@ -32,18 +32,26 @@
 			 :subclasses (find-subclasses class))))
    :key (lambda (class) (getf class :name))))
 
-
-
 (defun classes-to-plantuml (classes &optional (stream t))
   (mapcar (lambda (class)
-	    (format stream "class \"~a\"{ ~%~{ - ~S ~%~}}~%" (getf class :name) (getf class :slots))) classes)
+	    (format stream "class \"~a\"{ ~%~{ + ~S ~%~}}~%" (getf class :name) (getf class :slots))) classes)
+
   (mapcar (lambda (class)
-	    (mapcar (lambda (subclass)
-		      (format stream "\"~a\" <|-- \"~a\"~%" (getf class :name) subclass))
-		    (getf class :subclasses)))
+
+	    (let ((quantity (length (getf class :subclasses))) 
+		  lengths)
+	      (cond  
+		((< quantity 5) (setq lengths '("--")))
+		((< quantity 10) (setq lengths '("--" "---")))
+		((< quantity 20) (setq lengths '("--" "---" "----")))
+		(t (setq lengths '("--" "---" "----" "-----" "------"  "-------"  "--------"  "---------"))))
+
+	      (mapcar (lambda (subclass)
+			(format stream "\"~a\" <|~a \"~a\"~%" (getf class :name) (car lengths) subclass)
+			(setf lengths (append (rest lengths) (list (first lengths)))))
+		      (getf class :subclasses))))
 	  classes)
   t)
-
 
 (defun classes-to-plantuml-with-packages (classes &optional (stream t))
   (macrolet ((my-get-hash (class hash)
@@ -61,21 +69,9 @@
 	   (format stream "}~%")))))
 
 
-(with-open-file (archivo "/home/lucas/quicklisp/local-projects/cl-umlilify/diagrama.plant" :if-exists :supersede :direction :output)
-  (format archivo ";;; -*- Mode: org; -*- ~%#+begin_src plantuml :file salida.svg~%")
+(with-open-file (archivo "/home/lucas/quicklisp/local-projects/cl-plantify/cffi.plant" :if-exists :supersede :direction :output)
+  (format archivo ";;; -*- Mode: org; -*- ~%#+begin_src plantuml :file cffi.svg~%")
 
-  (classes-to-plantuml-with-packages
-   (reduce #'append
-	   (mapcar #'get-all-classes
-		   (delete (package-name 'common-lisp)
-			   (append (mapcar #'package-name (package-use-list (find-package 'ql))) '(ql) )))) archivo)
-
-  (format archivo "#+end_src"))
-
-
-(with-open-file (archivo "/home/lucas/quicklisp/local-projects/cl-umlilify/diagrama.plant" :if-exists :supersede :direction :output)
-  (format archivo ";;; -*- Mode: org; -*- ~%#+begin_src plantuml :file salida.svg~%")
-
-  (classes-to-plantuml-with-packages (get-all-classes 'common-lisp) archivo)
+  (classes-to-plantuml-with-packages (get-all-classes 'cffi) archivo)
 
   (format archivo "#+end_src"))

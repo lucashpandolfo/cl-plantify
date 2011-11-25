@@ -1,5 +1,5 @@
 ;;;; package.lisp
 
-(defpackage #:cl-umlilify
+(defpackage #:cl-plantify
   (:use #:cl))
 
